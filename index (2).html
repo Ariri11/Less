@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ariri's Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        .book-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .dark-mode {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .dark-mode .book-card {
+            background-color: #2d3748;
+            border-color: #4a5568;
+        }
+        .dark-mode input, .dark-mode select {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+        .profile-hover:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+        
+        /* Enhanced progress bar styling */
+        .progress-container {
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 0.5rem;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        /* Review styling */
+        .review-container {
+            background-color: #f5f3ff;
+            border-left: 3px solid #8b5cf6;
+        }
+        .dark-mode .review-container {
+            background-color: #2e1065;
+            border-left-color: #7c3aed;
+        }
+        .rating-stars {
+            color: #f59e0b;
+        }
+        .add-review-btn {
+            transition: all 0.2s ease;
+        }
+        .add-review-btn:hover {
+            background-color: #8b5cf6;
+            color: white;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="w-full h-48 bg-orange-500 overflow-hidden mb-8">
+        <img src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+             alt="Library wallpaper" 
+             class="w-full h-full object-cover opacity-90">
+    </div>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-book text-indigo-700 text-2xl"></i>
+                <h1 class="text-3xl font-bold text-indigo-700">Ariri's Library</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2 profile-hover cursor-pointer">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <i class="fas fa-user text-indigo-600"></i>
+                    </div>
+                    <div class="text-sm">
+                        <div class="font-medium">Librarian Ariri</div>
+                        <div class="text-gray-500">Admin</div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded-full">
+                            ${books.length} total
+                        </div>
+                        <div class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                            ${books.filter(b => b.status === 'checked-out').length} checked out
+                        </div>
+                    </div>
+                </div>
+                <button id="darkModeToggle" class="p-2 rounded-full bg-gray-200 hover:bg-gray-300">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="statsToggle" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                    <i class="fas fa-chart-bar mr-2"></i>Stats
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Panel (Hidden by default) -->
+        <div id="statsPanel" class="hidden bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Library Statistics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-indigo-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-indigo-700">Total Books</h3>
+                    <p class="text-3xl font-bold" id="totalBooks">0</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-blue-700">Checked Out</h3>
+                    <p class="text-3xl font-bold" id="checkedOutBooks">0</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-green-700">Completed</h3>
+                    <p class="text-3xl font-bold" id="completedBooks">0</p>
+                    <p class="text-sm" id="completedPercent">0%</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-medium text-yellow-700">In Progress</h3>
+                    <p class="text-3xl font-bold" id="inProgressBooks">0</p>
+                    <p class="text-sm" id="inProgressPercent">0%</p>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h3 class="font-medium mb-2">Checked Out Books</h3>
+                <div class="bg-white rounded-lg shadow p-4 mb-4 max-h-60 overflow-y-auto">
+                    ${books.filter(b => b.status === 'checked-out').length > 0 ? 
+                        books.filter(b => b.status === 'checked-out').map(book => `
+                            <div class="py-2 border-b last:border-b-0">
+                                <div class="font-medium">${book.title}</div>
+                                <div class="text-sm">Borrower: ${book.borrower}</div>
+                                <div class="text-sm">Due: ${book.dueDate}</div>
+                            </div>
+                        `).join('') : 
+                        '<p class="text-gray-500">No books currently checked out</p>'}
+                </div>
+                
+                <h3 class="font-medium mb-2">Completion Progress</h3>
+                <div class="w-full bg-gray-200 rounded-full h-4">
+                    <div id="completionBar" class="progress-bar h-4 rounded-full bg-indigo-600" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex-1">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search Books</label>
+                    <input type="text" id="search" placeholder="Search by title or author..." 
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                    <select id="statusFilter" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="all">All Books</option>
+                        <option value="completed">Completed</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="not-started">Not Started</option>
+                        <option value="checked-out">Checked Out</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <select id="sortBy" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="title-asc">Title (A-Z)</option>
+                        <option value="title-desc">Title (Z-A)</option>
+                        <option value="author-asc">Author (A-Z)</option>
+                        <option value="author-desc">Author (Z-A)</option>
+                        <option value="progress-asc">Progress (Low-High)</option>
+                        <option value="progress-desc">Progress (High-Low)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Book Form -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Add New Book</h2>
+            <form id="addBookForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="bookTitle" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input type="text" id="bookTitle" required 
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="bookAuthor" class="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                    <input type="text" id="bookAuthor" required 
+                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="bookStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="bookStatus" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="not-started">Not Started</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-plus mr-2"></i>Add Book
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Books Grid -->
+        <div id="booksContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Books will be dynamically added here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <i class="fas fa-book-open text-5xl text-gray-300 mb-4"></i>
+            <h3 class="text-xl font-medium text-gray-500">No books found</h3>
+            <p class="text-gray-400">Try adjusting your search or filters</p>
+        </div>
+    </div>
+
+    <script>
+        // Sample book data (75+ books)
+        const sampleBooks = [
+            { id: 1, title: "To Kill a Mockingbird", author: "Harper Lee", status: "checked-out", progress: 100, borrower: "John Doe", dueDate: "2023-12-15" },
+            { id: 2, title: "1984", author: "George Orwell", status: "completed", progress: 100, rating: 5, review: "A chilling and thought-provoking masterpiece about totalitarianism." },
+            { id: 3, title: "The Great Gatsby", author: "F. Scott Fitzgerald", status: "completed", progress: 100, rating: 4, review: "Beautiful prose capturing the decadence of the Jazz Age." },
+            { id: 4, title: "Pride and Prejudice", author: "Jane Austen", status: "completed", progress: 100, rating: 5, review: "Timeless romantic comedy with brilliant character development." },
+            { id: 5, title: "The Catcher in the Rye", author: "J.D. Salinger", status: "in-progress", progress: 45 },
+            { id: 6, title: "The Hobbit", author: "J.R.R. Tolkien", status: "in-progress", progress: 30 },
+            { id: 7, title: "Fahrenheit 451", author: "Ray Bradbury", status: "not-started", progress: 0 },
+            { id: 8, title: "Moby-Dick", author: "Herman Melville", status: "not-started", progress: 0 },
+            { id: 9, title: "War and Peace", author: "Leo Tolstoy", status: "not-started", progress: 0 },
+            { id: 10, title: "The Odyssey", author: "Homer", status: "not-started", progress: 0 },
+            { id: 11, title: "Ulysses", author: "James Joyce", status: "not-started", progress: 0 },
+            { id: 12, title: "The Divine Comedy", author: "Dante Alighieri", status: "not-started", progress: 0 },
+            { id: 13, title: "Hamlet", author: "William Shakespeare", status: "completed", progress: 100 },
+            { id: 14, title: "Crime and Punishment", author: "Fyodor Dostoevsky", status: "in-progress", progress: 65 },
+            { id: 15, title: "The Brothers Karamazov", author: "Fyodor Dostoevsky", status: "not-started", progress: 0 },
+            { id: 16, title: "Anna Karenina", author: "Leo Tolstoy", status: "not-started", progress: 0 },
+            { id: 17, title: "Don Quixote", author: "Miguel de Cervantes", status: "not-started", progress: 0 },
+            { id: 18, title: "The Iliad", author: "Homer", status: "not-started", progress: 0 },
+            { id: 19, title: "Brave New World", author: "Aldous Huxley", status: "completed", progress: 100 },
+            { id: 20, title: "One Hundred Years of Solitude", author: "Gabriel García Márquez", status: "completed", progress: 100 },
+            { id: 21, title: "The Grapes of Wrath", author: "John Steinbeck", status: "not-started", progress: 0 },
+            { id: 22, title: "The Sound and the Fury", author: "William Faulkner", status: "not-started", progress: 0 },
+            { id: 23, title: "Lolita", author: "Vladimir Nabokov", status: "not-started", progress: 0 },
+            { id: 24, title: "The Lord of the Rings", author: "J.R.R. Tolkien", status: "in-progress", progress: 25 },
+            { id: 25, title: "Jane Eyre", author: "Charlotte Brontë", status: "completed", progress: 100 },
+            { id: 26, title: "Wuthering Heights", author: "Emily Brontë", status: "not-started", progress: 0 },
+            { id: 27, title: "The Picture of Dorian Gray", author: "Oscar Wilde", status: "completed", progress: 100 },
+            { id: 28, title: "Frankenstein", author: "Mary Shelley", status: "not-started", progress: 0 },
+            { id: 29, title: "Dracula", author: "Bram Stoker", status: "not-started", progress: 0 },
+            { id: 30, title: "The Adventures of Huckleberry Finn", author: "Mark Twain", status: "not-started", progress: 0 },
+            { id: 31, title: "Alice's Adventures in Wonderland", author: "Lewis Carroll", status: "completed", progress: 100 },
+            { id: 32, title: "The Count of Monte Cristo", author: "Alexandre Dumas", status: "not-started", progress: 0 },
+            { id: 33, title: "Great Expectations", author: "Charles Dickens", status: "not-started", progress: 0 },
+            { id: 34, title: "Les Misérables", author: "Victor Hugo", status: "not-started", progress: 0 },
+            { id: 35, title: "The Stranger", author: "Albert Camus", status: "completed", progress: 100 },
+            { id: 36, title: "The Trial", author: "Franz Kafka", status: "not-started", progress: 0 },
+            { id: 37, title: "The Metamorphosis", author: "Franz Kafka", status: "not-started", progress: 0 },
+            { id: 38, title: "In Search of Lost Time", author: "Marcel Proust", status: "not-started", progress: 0 },
+            { id: 39, title: "Madame Bovary", author: "Gustave Flaubert", status: "not-started", progress: 0 },
+            { id: 40, title: "The Sun Also Rises", author: "Ernest Hemingway", status: "not-started", progress: 0 },
+            { id: 41, title: "For Whom the Bell Tolls", author: "Ernest Hemingway", status: "not-started", progress: 0 },
+            { id: 42, title: "The Old Man and the Sea", author: "Ernest Hemingway", status: "completed", progress: 100 },
+            { id: 43, title: "Catch-22", author: "Joseph Heller", status: "not-started", progress: 0 },
+            { id: 44, title: "Beloved", author: "Toni Morrison", status: "not-started", progress: 0 },
+            { id: 45, title: "Slaughterhouse-Five", author: "Kurt Vonnegut", status: "not-started", progress: 0 },
+            { id: 46, title: "The Handmaid's Tale", author: "Margaret Atwood", status: "completed", progress: 100 },
+            { id: 47, title: "The Road", author: "Cormac McCarthy", status: "not-started", progress: 0 },
+            { id: 48, title: "Blood Meridian", author: "Cormac McCarthy", status: "not-started", progress: 0 },
+            { id: 49, title: "Invisible Man", author: "Ralph Ellison", status: "not-started", progress: 0 },
+            { id: 50, title: "Native Son", author: "Richard Wright", status: "not-started", progress: 0 },
+            { id: 51, title: "Their Eyes Were Watching God", author: "Zora Neale Hurston", status: "not-started", progress: 0 },
+            { id: 52, title: "The Color Purple", author: "Alice Walker", status: "not-started", progress: 0 },
+            { id: 53, title: "The Bell Jar", author: "Sylvia Plath", status: "not-started", progress: 0 },
+            { id: 54, title: "On the Road", author: "Jack Kerouac", status: "not-started", progress: 0 },
+            { id: 55, title: "The Dharma Bums", author: "Jack Kerouac", status: "not-started", progress: 0 },
+            { id: 56, title: "The Naked and the Dead", author: "Norman Mailer", status: "not-started", progress: 0 },
+            { id: 57, title: "The Golden Notebook", author: "Doris Lessing", status: "not-started", progress: 0 },
+            { id: 58, title: "Midnight's Children", author: "Salman Rushdie", status: "not-started", progress: 0 },
+            { id: 59, title: "The Satanic Verses", author: "Salman Rushdie", status: "not-started", progress: 0 },
+            { id: 60, title: "The God of Small Things", author: "Arundhati Roy", status: "not-started", progress: 0 },
+            { id: 61, title: "White Teeth", author: "Zadie Smith", status: "not-started", progress: 0 },
+            { id: 62, title: "The Corrections", author: "Jonathan Franzen", status: "not-started", progress: 0 },
+            { id: 63, title: "Infinite Jest", author: "David Foster Wallace", status: "not-started", progress: 0 },
+            { id: 64, title: "The Brief Wondrous Life of Oscar Wao", author: "Junot Díaz", status: "not-started", progress: 0 },
+            { id: 65, title: "The Amazing Adventures of Kavalier & Clay", author: "Michael Chabon", status: "not-started", progress: 0 },
+            { id: 66, title: "The Secret History", author: "Donna Tartt", status: "not-started", progress: 0 },
+            { id: 67, title: "The Goldfinch", author: "Donna Tartt", status: "not-started", progress: 0 },
+            { id: 68, title: "The Underground Railroad", author: "Colson Whitehead", status: "not-started", progress: 0 },
+            { id: 69, title: "The Nickel Boys", author: "Colson Whitehead", status: "not-started", progress: 0 },
+            { id: 70, title: "There There", author: "Tommy Orange", status: "not-started", progress: 0 },
+            { id: 71, title: "The Overstory", author: "Richard Powers", status: "not-started", progress: 0 },
+            { id: 72, title: "Lincoln in the Bardo", author: "George Saunders", status: "not-started", progress: 0 },
+            { id: 73, title: "The Sympathizer", author: "Viet Thanh Nguyen", status: "not-started", progress: 0 },
+            { id: 74, title: "Pachinko", author: "Min Jin Lee", status: "not-started", progress: 0 },
+            { id: 75, title: "Homegoing", author: "Yaa Gyasi", status: "not-started", progress: 0 },
+            { id: 76, title: "The Water Dancer", author: "Ta-Nehisi Coates", status: "not-started", progress: 0 },
+            { id: 77, title: "Such a Fun Age", author: "Kiley Reid", status: "not-started", progress: 0 },
+            { id: 78, title: "Normal People", author: "Sally Rooney", status: "not-started", progress: 0 },
+            { id: 79, title: "Conversations with Friends", author: "Sally Rooney", status: "not-started", progress: 0 },
+            { id: 80, title: "The Vanishing Half", author: "Brit Bennett", status: "not-started", progress: 0 }
+        ];
+
+        // DOM Elements
+        const booksContainer = document.getElementById('booksContainer');
+        const emptyState = document.getElementById('emptyState');
+        const addBookForm = document.getElementById('addBookForm');
+        const searchInput = document.getElementById('search');
+        const statusFilter = document.getElementById('statusFilter');
+        const sortBy = document.getElementById('sortBy');
+        const statsPanel = document.getElementById('statsPanel');
+        const statsToggle = document.getElementById('statsToggle');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const totalBooksEl = document.getElementById('totalBooks');
+        const completedBooksEl = document.getElementById('completedBooks');
+        const completedPercentEl = document.getElementById('completedPercent');
+        const inProgressBooksEl = document.getElementById('inProgressBooks');
+        const inProgressPercentEl = document.getElementById('inProgressPercent');
+        const completionBar = document.getElementById('completionBar');
+
+        // Initialize books from localStorage or sample data
+        let books = JSON.parse(localStorage.getItem('aririLibraryBooks')) || sampleBooks;
+
+        // Render books
+        function renderBooks(booksToRender = books) {
+            booksContainer.innerHTML = '';
+            
+            if (booksToRender.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            booksToRender.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card bg-white rounded-lg shadow-md p-6 border border-gray-200 transition-all duration-200';
+                
+                let statusColor = 'bg-gray-200';
+                let statusText = 'Not Started';
+                
+                if (book.status === 'in-progress') {
+                    statusColor = 'bg-yellow-200';
+                    statusText = 'In Progress';
+                } else if (book.status === 'completed') {
+                    statusColor = 'bg-green-200';
+                    statusText = 'Completed';
+                } else if (book.status === 'checked-out') {
+                    statusColor = 'bg-blue-200';
+                    statusText = 'Checked Out';
+                }
+                
+                // Generate cover image URL based on title (using OpenLibrary's cover service)
+                const coverUrl = `https://covers.openlibrary.org/b/title/${encodeURIComponent(book.title)}-M.jpg?default=false`;
+                
+                bookCard.innerHTML = `
+                    <div class="mb-4 h-48 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                        <img src="${coverUrl}" alt="${book.title} cover" 
+                             class="h-full w-full object-cover"
+                             onerror="this.onerror=null;this.src='https://via.placeholder.com/150x200?text=No+Cover';this.className='h-auto w-full object-contain'">
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold text-lg truncate">${book.title}</h3>
+                        <span class="status-badge ${statusColor} text-${statusText === 'Completed' ? 'green' : statusText === 'In Progress' ? 'yellow' : statusText === 'Checked Out' ? 'blue' : 'gray'}-800">${statusText}</span>
+                    </div>
+                    <p class="text-gray-600 mb-4">${book.author}</p>
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center text-sm mb-1">
+                            <span class="font-medium">Reading Progress</span>
+                            <span class="font-bold">${book.progress}%</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-fill rounded-full ${book.status === 'completed' ? 'bg-green-500' : 'bg-indigo-500'}" style="width: ${book.progress}%"></div>
+                        </div>
+                    </div>
+                    ${book.status === 'checked-out' ? `
+                    <div class="mt-2 mb-2 text-xs bg-blue-50 p-2 rounded">
+                        <div class="font-medium">Borrowed by: ${book.borrower}</div>
+                        <div>Due: ${book.dueDate}</div>
+                    </div>
+                    ` : book.borrower ? `
+                    <div class="mt-2 mb-2 text-xs bg-gray-100 p-2 rounded">
+                        <div class="font-medium">Last borrowed by: ${book.borrower}</div>
+                        ${book.dueDate ? `<div>Was due: ${book.dueDate}</div>` : ''}
+                    </div>
+                    ` : ''}
+                    ${book.status === 'completed' ? `
+                    <div class="mt-4">
+                        <button class="add-review-btn text-xs px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full font-medium" data-id="${book.id}">
+                            <i class="fas fa-star mr-1 rating-stars"></i>${book.review ? 'Edit' : 'Add'} Review
+                        </button>
+                        ${book.review ? `
+                        <div class="mt-3 text-sm review-container p-3 rounded-r">
+                            <div class="font-medium flex items-center">
+                                <span class="rating-stars mr-1">${'★'.repeat(book.rating)}${'☆'.repeat(5-book.rating)}</span>
+                                <span>(${book.rating}/5)</span>
+                            </div>
+                            <div class="mt-1">${book.review}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    <div class="flex justify-between mt-4">
+                        <select class="book-status text-xs px-2 py-1 border rounded" data-id="${book.id}">
+                            <option value="not-started" ${book.status === 'not-started' ? 'selected' : ''}>Not Started</option>
+                            <option value="in-progress" ${book.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="completed" ${book.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            <option value="checked-out" ${book.status === 'checked-out' ? 'selected' : ''}>Check Out</option>
+                        </select>
+                        <div class="flex space-x-2">
+                            <button class="edit-progress text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200" data-id="${book.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-book text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200" data-id="${book.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                booksContainer.appendChild(bookCard);
+            });
+            
+            // Add event listeners to status dropdowns
+            document.querySelectorAll('.book-status').forEach(select => {
+                select.addEventListener('change', function() {
+                    const bookId = parseInt(this.dataset.id);
+                    const newStatus = this.value;
+                    updateBookStatus(bookId, newStatus);
+                });
+            });
+            
+            // Add event listeners to edit buttons
+            document.querySelectorAll('.edit-progress').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = parseInt(this.dataset.id);
+                    editBookProgress(bookId);
+                });
+            });
+            
+            // Add event listeners to review buttons
+            document.querySelectorAll('.add-review').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = parseInt(this.dataset.id);
+                    addBookReview(bookId);
+                });
+            });
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-book').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookId = parseInt(this.dataset.id);
+                    deleteBook(bookId);
+                });
+            });
+            
+            updateStats();
+        }
+
+        // Update book status
+        function updateBookStatus(bookId, newStatus) {
+            const bookIndex = books.findIndex(book => book.id === bookId);
+            if (bookIndex !== -1) {
+                books[bookIndex].status = newStatus;
+                
+                if (newStatus === 'checked-out') {
+                    const borrower = prompt("Enter borrower's name:");
+                    if (!borrower) return false;
+                    
+                    const dueDate = prompt("Enter due date (YYYY-MM-DD):");
+                    if (!dueDate) return false;
+                    
+                    books[bookIndex].borrower = borrower;
+                    books[bookIndex].dueDate = dueDate;
+                } else {
+                    // Clear borrower info if book is returned
+                    delete books[bookIndex].borrower;
+                    delete books[bookIndex].dueDate;
+                }
+                
+                // If status is changed to completed, set progress to 100%
+                if (newStatus === 'completed') {
+                    books[bookIndex].progress = 100;
+                }
+                
+                // If status is changed from completed, adjust progress if needed
+                if (newStatus !== 'completed' && books[bookIndex].progress === 100) {
+                    books[bookIndex].progress = 50;
+                }
+                
+                saveBooks();
+                renderBooks(filterAndSortBooks());
+            }
+        }
+
+        // Edit book progress
+        function editBookProgress(bookId) {
+            const book = books.find(book => book.id === bookId);
+            if (!book) return;
+            
+            const newProgress = prompt(`Enter progress percentage for "${book.title}" (0-100):`, book.progress);
+            if (newProgress === null) return;
+            
+            const progressNum = parseInt(newProgress);
+            if (isNaN(progressNum) || progressNum < 0 || progressNum > 100) {
+                alert('Please enter a number between 0 and 100');
+                return;
+            }
+            
+            book.progress = progressNum;
+            
+            // Update status based on progress
+            if (progressNum === 100) {
+                book.status = 'completed';
+            } else if (progressNum > 0) {
+                book.status = 'in-progress';
+            } else {
+                book.status = 'not-started';
+            }
+            
+            saveBooks();
+            renderBooks(filterAndSortBooks());
+        }
+
+        // Add/edit book review
+        function addBookReview(bookId) {
+            const book = books.find(book => book.id === bookId);
+            if (!book || book.status !== 'completed') return;
+            
+            const rating = prompt("Rate this book (1-5 stars):", book.rating || '');
+            if (rating === null) return;
+            
+            const ratingNum = parseInt(rating);
+            if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+                alert('Please enter a number between 1 and 5');
+                return;
+            }
+            
+            const review = prompt("Write your review:", book.review || '');
+            if (review === null) return;
+            
+            book.rating = ratingNum;
+            book.review = review;
+            
+            saveBooks();
+            renderBooks(filterAndSortBooks());
+        }
+
+        // Delete book
+        function deleteBook(bookId) {
+            if (confirm('Are you sure you want to delete this book?')) {
+                books = books.filter(book => book.id !== bookId);
+                saveBooks();
+                renderBooks(filterAndSortBooks());
+            }
+        }
+
+        // Add new book
+        addBookForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('bookTitle').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            const status = document.getElementById('bookStatus').value;
+            
+            if (!title || !author) {
+                alert('Please enter both title and author');
+                return;
+            }
+            
+            const newBook = {
+                id: Date.now(), // Simple unique ID
+                title,
+                author,
+                status,
+                progress: status === 'completed' ? 100 : (status === 'in-progress' ? 50 : 0),
+                coverUrl: `https://covers.openlibrary.org/b/title/${encodeURIComponent(title)}-M.jpg?default=false`
+            };
+            
+            books.push(newBook);
+            saveBooks();
+            
+            // Reset form
+            addBookForm.reset();
+            document.getElementById('bookTitle').focus();
+            
+            renderBooks(filterAndSortBooks());
+        });
+
+        // Filter and sort books based on current filters
+        function filterAndSortBooks() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusFilterValue = statusFilter.value;
+            
+            // Filter by search term and status
+            let filteredBooks = books.filter(book => {
+                const matchesSearch = book.title.toLowerCase().includes(searchTerm) || 
+                                     book.author.toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilterValue === 'all' || 
+                                     book.status === statusFilterValue;
+                return matchesSearch && matchesStatus;
+            });
+            
+            // Sort books
+            const sortValue = sortBy.value;
+            filteredBooks.sort((a, b) => {
+                switch (sortValue) {
+                    case 'title-asc':
+                        return a.title.localeCompare(b.title);
+                    case 'title-desc':
+                        return b.title.localeCompare(a.title);
+                    case 'author-asc':
+                        return a.author.localeCompare(b.author);
+                    case 'author-desc':
+                        return b.author.localeCompare(a.author);
+                    case 'progress-asc':
+                        return a.progress - b.progress;
+                    case 'progress-desc':
+                        return b.progress - a.progress;
+                    default:
+                        return 0;
+                }
+            });
+            
+            return filteredBooks;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = books.length;
+            const completed = books.filter(book => book.status === 'completed').length;
+            const inProgress = books.filter(book => book.status === 'in-progress').length;
+            const checkedOut = books.filter(book => book.status === 'checked-out').length;
+            
+            totalBooksEl.textContent = total;
+            completedBooksEl.textContent = completed;
+            inProgressBooksEl.textContent = inProgress;
+            document.getElementById('checkedOutBooks').textContent = checkedOut;
+            
+            const completedPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const inProgressPercent = total > 0 ? Math.round((inProgress / total) * 100) : 0;
+            
+            completedPercentEl.textContent = `${completedPercent}% of total`;
+            inProgressPercentEl.textContent = `${inProgressPercent}% of total`;
+            
+            completionBar.style.width = `${completedPercent}%`;
+        }
+
+        // Save books to localStorage
+        function saveBooks() {
+            localStorage.setItem('aririLibraryBooks', JSON.stringify(books));
+        }
+
+        // Event listeners for filters
+        searchInput.addEventListener('input', () => renderBooks(filterAndSortBooks()));
+        statusFilter.addEventListener('change', () => renderBooks(filterAndSortBooks()));
+        sortBy.addEventListener('change', () => renderBooks(filterAndSortBooks()));
+
+        // Toggle stats panel
+        statsToggle.addEventListener('click', () => {
+            statsPanel.classList.toggle('hidden');
+        });
+
+        // Toggle dark mode
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const icon = darkModeToggle.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        });
+
+        // Initial render
+        renderBooks(filterAndSortBooks());
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=murimileslie/ariri-master" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
